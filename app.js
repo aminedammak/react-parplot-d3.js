@@ -1,21 +1,45 @@
-const incomingData = [
-  { U: 230.7, I: 2.5, angle: 20, color: "blue" },
-  { U: 230.7, I: 2.5, angle: 130, color: "green" },
-  { U: 230.7, I: 2.5, angle: 250, color: "red" },
-];
+const incomingData = {
+  1: { U: 207, I: 2.5, angle: 20 },
+  2: { U: 230, I: 2.5, angle: 10 },
+  3: { U: 250, I: 2.5, angle: 10 },
+};
 
-const fixAngles = [
-  { angle: 0, color: "blue" },
-  { angle: 120, color: "green" },
-  { angle: 240, color: "red" },
-];
+const angleU1 = 0;
+const angleU2 = 120;
+const angleU3 = 240;
 
-const radius = 200;
+const fixedAngles = { 1: angleU1, 2: angleU2, 3: angleU3 };
+const colors = { 1: "blue", 2: "green", 3: "red" };
+
+const completeData = [];
+
+for (let key in incomingData) {
+  let item = incomingData[key];
+  item.fixAngle = fixedAngles[key];
+  item.color = colors[key];
+  completeData.push(item);
+}
+
+/*
+
+completeData = [
+    {U: 230.7, I: 2.5, angle: 20, fixAngle: 0, color: "blue"},
+    {U: 230.7, I: 2.5, angle: 10, fixAngle: 120, color: "green"},
+    {U: 230.7, I: 2.5, angle: 10, fixAngle: 240, color: "red"}
+]
+ */
+
+const radius = 250;
 const strokeCircle = 2;
-const strokeLine = 6;
+const strokeLine = 9;
 const radiusStroke = radius + strokeCircle;
 
 const widthSvg = radius * 2 + strokeCircle * 2;
+
+const radialAxis = d3
+  .scaleLinear()
+  .domain([0, /*d3.max(completeData, (d) => d.U)*/ 250])
+  .range([0, radius]);
 
 const svgContainer = d3
   .select(".parplot-chart")
@@ -46,18 +70,18 @@ var f = findPoint(radiusStroke, radiusStroke, radius, 240);
 
 const fixedLines = svgContainer
   .selectAll(".fixed-line")
-  .data(fixAngles)
+  .data(completeData)
   .enter()
   .append("line")
   .classed("fixed-line", true)
   .attr("x1", radiusStroke)
   .attr("y1", radiusStroke)
   .attr("x2", (data) => {
-    f = findPoint(radiusStroke, radiusStroke, radius, data.angle);
+    f = findPoint(radiusStroke, radiusStroke, radius, data.fixAngle);
     return f.x;
   })
   .attr("y2", (data) => {
-    f = findPoint(radiusStroke, radiusStroke, radius, data.angle);
+    f = findPoint(radiusStroke, radiusStroke, radius, data.fixAngle);
     return f.y;
   })
   .attr("stroke", (data) => data.color)
@@ -65,18 +89,32 @@ const fixedLines = svgContainer
 
 const variableLines = svgContainer
   .selectAll(".variable-line")
-  .data(incomingData)
+  .data(completeData)
   .enter()
   .append("line")
   .classed("variable-line", true)
   .attr("x1", radiusStroke)
   .attr("y1", radiusStroke)
   .attr("x2", (data) => {
-    f = findPoint(radiusStroke, radiusStroke, radius - 20, data.angle);
+    console.log("rad", radialAxis(250));
+
+    const radiusCalculated = radialAxis(data.U);
+    f = findPoint(
+      radiusStroke,
+      radiusStroke,
+      radiusCalculated,
+      data.fixAngle + data.angle
+    );
     return f.x;
   })
   .attr("y2", (data) => {
-    f = findPoint(radiusStroke, radiusStroke, radius - 20, data.angle);
+    const radiusCalculated = radialAxis(data.U);
+    f = findPoint(
+      radiusStroke,
+      radiusStroke,
+      radiusCalculated,
+      data.fixAngle + data.angle
+    );
     return f.y;
   })
   .attr("stroke", (data) => data.color)
@@ -88,9 +126,6 @@ const variableLines = svgContainer
   .on("mouseout", () => hideTooltip());
 
 const showTooltip = (data) => {
-  console.log("showTooltip", data);
-
-  //insert the new one
   const g = svgContainer
     .selectAll(".tooltip")
     .data([data])
@@ -101,11 +136,21 @@ const showTooltip = (data) => {
   const rect = g
     .append("rect")
     .attr("x", (data) => {
-      f = findPoint(radiusStroke, radiusStroke, radius / 2, data.angle);
+      f = findPoint(
+        radiusStroke,
+        radiusStroke,
+        radius / 2,
+        data.angle + data.fixAngle
+      );
       return f.x;
     })
     .attr("y", (data) => {
-      f = findPoint(radiusStroke, radiusStroke, radius / 2, data.angle);
+      f = findPoint(
+        radiusStroke,
+        radiusStroke,
+        radius / 2,
+        data.angle + data.fixAngle
+      );
       return f.y;
     })
     .attr("width", 50)
@@ -122,14 +167,24 @@ const showTooltip = (data) => {
     .enter()
     .append("text")
     .attr("x", (data) => {
-      f = findPoint(radiusStroke, radiusStroke, radius / 2, data.angle);
+      f = findPoint(
+        radiusStroke,
+        radiusStroke,
+        radius / 2,
+        data.angle + data.fixAngle
+      );
       return f.x;
     })
     .attr("y", (data) => {
-      f = findPoint(radiusStroke, radiusStroke, radius / 2, data.angle);
+      f = findPoint(
+        radiusStroke,
+        radiusStroke,
+        radius / 2,
+        data.angle + data.fixAngle
+      );
       return f.y;
     })
-    .text((data) => data.angle)
+    .text((data) => data.U)
     .attr("transform", "translate(25, 18)")
     .attr("font-family", "Arial, Helvetica, sans-serif")
     .attr("text-anchor", "middle")
